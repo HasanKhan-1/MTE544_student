@@ -53,16 +53,13 @@ class motion_executioner(Node):
         # TODO Part 5: Create below the subscription to the topics corresponding to the respective sensors
 
         # IMU subscription
-
-        self.imu_sub = self.create_subscription(Imu, '/imu',self.imu_callback,)
+        self.imu_sub = self.create_subscription(Imu, '/imu',self.imu_callback,qos)
         
         # ENCODER subscription
-
-        self.odom_sub = self.create_subscription(Odometry, '/odom', 10)
+        self.odom_sub = self.create_subscription(Odometry, '/odom', self.odom_callback,qos)
         
         # LaserScan subscription 
-        
-        self.laser_scan_sub = self.create_subscription(LaserScan, '/scan', 10)
+        self.laser_scan_sub = self.create_subscription(LaserScan, '/scan', self.odom_callback,qos)
 
         
         self.create_timer(0.1, self.timer_callback)
@@ -75,16 +72,46 @@ class motion_executioner(Node):
     # You can save the needed fields into a list, and pass the list to the log_values function in utilities.py
 
     def imu_callback(self, imu_msg: Imu):
-        ...    # log imu msgs
+        acc_x = imu_msg.linear_acceleration.x
+        acc_y = imu_msg.linear_acceleration.y
+
+        ang_vel =  imu_msg._angular_velocity.z #When you turn the robot its about z
+        time_stamp = Time.from_msg(imu_msg.header.stamp).nanoseconds
+        log_data = [acc_x,acc_y,ang_vel,time_stamp,log_data]
+
+        # Pass the values to the logger
+        self.imu_logger.log_values(log_data)
+
+        #For testing later
+        self.imu_flag= True
         
     def odom_callback(self, odom_msg: Odometry):
-        
-        ... # log odom msgs
-                
+        x = odom_msg.pose.pose.position.x
+        y = odom_msg.pose.pose.position.y
+
+        orientation = odom_msg.pose.pose.orientation
+
+        #Some dummy shit for converting to quaternion
+        _,_,th = euler_from_quaternion()
+        time_stamp_odom = Time.from_msg(odom_msg.header.stamp).nanoseconds
+
+        log_data = [x,y,time_stamp_odom,orientation]
+        self.odom_logger.log_values(log_data)
+
+        self.odom_flag = True
+                  
     def laser_callback(self, laser_msg: LaserScan):
-        
-        ... # log laser msgs with position msg at that time
-                
+
+        ranges = laser_msg.ranges
+        angle_increment = laser_msg.angle_increment
+        laser_time = Time.from_msg(laser_msg.header.stamp).nanoseconds
+
+        log_data = [ranges, angle_increment, laser_time]
+
+        self.laser_logger.log_values(log_data)
+
+        self.laser_flag = True
+
     def timer_callback(self):
         
         if self.odom_initialized and self.laser_initialized and self.imu_initialized:
