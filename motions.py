@@ -6,14 +6,14 @@ from rclpy.node import Node
 from utilities import Logger, euler_from_quaternion
 from rclpy.qos import QoSProfile
 
-# TODO Part 3: Import message types needed: 
+# TODO Part 3: Import message types needed:  DONE
     # For sending velocity commands to the robot: Twist
     # For the sensors: Imu, LaserScan, and Odometry
 # Check the online documentation to fill in the lines below
-from ... import Twist
+from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Imu
-from ... import LaserScan
-from ... import Odometry
+from sensor_msgs.msg import LaserScan
+from nav_msgs.msg import Odometry
 
 from rclpy.time import Time
 
@@ -39,29 +39,31 @@ class motion_executioner(Node):
         self.odom_initialized=False
         self.laser_initialized=False
         
-        # TODO Part 3: Create a publisher to send velocity commands by setting the proper parameters in (...)
-        self.vel_publisher=self.create_publisher(...)
-                
+        # TODO Part 3: Create a publisher to send velocity commands by setting the proper parameters in (...) DONE
+        self.vel_publisher=self.create_publisher(Twist, '/cmd_vel',10)
+
         # loggers
         self.imu_logger=Logger('imu_content_'+str(motion_types[motion_type])+'.csv', headers=["acc_x", "acc_y", "angular_z", "stamp"])
         self.odom_logger=Logger('odom_content_'+str(motion_types[motion_type])+'.csv', headers=["x","y","th", "stamp"])
         self.laser_logger=Logger('laser_content_'+str(motion_types[motion_type])+'.csv', headers=["ranges", "angle_increment", "stamp"])
         
-        # TODO Part 3: Create the QoS profile by setting the proper parameters in (...)
-        qos=QoSProfile(...)
+        # TODO Part 3: Create the QoS profile by setting the proper parameters in (...) (Based on wether we are using simulation or acc robot)
+        qos=QoSProfile(depth =10)
 
         # TODO Part 5: Create below the subscription to the topics corresponding to the respective sensors
+
         # IMU subscription
-        
-        ...
+
+        self.imu_sub = self.create_subscription(Imu, '/imu',self.imu_callback,)
         
         # ENCODER subscription
 
-        ...
+        self.odom_sub = self.create_subscription(Odometry, '/odom', 10)
         
         # LaserScan subscription 
         
-        ...
+        self.laser_scan_sub = self.create_subscription(LaserScan, '/scan', 10)
+
         
         self.create_timer(0.1, self.timer_callback)
 
