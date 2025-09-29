@@ -144,15 +144,39 @@ class motion_executioner(Node):
         
         msg=Twist()
         ... # fill up the twist msg for circular motion
+        linear.x = 0
+        linear.y = 0
+        linear.z = 0
+        
+        angular.x = 0
+        angular.y = 0
+        angular.z = -0.3 
+        
         return msg
 
     def make_spiral_twist(self):
         msg=Twist()
         ... # fill up the twist msg for spiral motion
+        linear.x = 1
+        linear.y = 0
+        linear.z = 0
+        
+        angular.x = 0
+        angular.y = 0
+        angular.z = -0.3
+        
+        #radius += linear.x
         return msg
     
     def make_acc_line_twist(self):
         msg=Twist()
+        linear.x = 1
+        linear.y = 0
+        linear.z = 0
+        
+        angular.x = 0
+        angular.y = 0
+        angular.z = 0
         ... # fill up the twist msg for line motion
         return msg
 

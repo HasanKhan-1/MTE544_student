@@ -1,4 +1,5 @@
 from math import atan2, asin, sqrt
+from tf_transformations import quaternion_from_euler 
 
 M_PI=3.1415926535
 
@@ -85,7 +86,11 @@ def euler_from_quaternion(quat):
     Convert quaternion (w in last place) to euler roll, pitch, yaw.
     quat = [x, y, z, w]
     """
-    ... # just unpack yaw
+    
+    .# just unpack yaw
+    quat_list = [quat.x, quat.y, quat.z, quat.w]
+    (roll, pitch, yaw) = euler_from_quaternion(quat_list)
+     	   	
     return yaw
 
 
