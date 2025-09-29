@@ -89,10 +89,11 @@ class motion_executioner(Node):
         x = odom_msg.pose.pose.position.x
         y = odom_msg.pose.pose.position.y
 
+
         orientation = odom_msg.pose.pose.orientation
 
         #Some dummy shit for converting to quaternion
-        _,_,th = euler_from_quaternion()
+        yaw = euler_from_quaternion(orientation.x,orientation.y,orientation.z,orientation.w)
         time_stamp_odom = Time.from_msg(odom_msg.header.stamp).nanoseconds
 
         log_data = [x,y,time_stamp_odom,orientation]
@@ -144,39 +145,39 @@ class motion_executioner(Node):
         
         msg=Twist()
         ... # fill up the twist msg for circular motion
-        linear.x = 0
-        linear.y = 0
-        linear.z = 0
+        self.linear.x = 0
+        self.linear.y = 0
+        self.linear.z = 0
         
-        angular.x = 0
-        angular.y = 0
-        angular.z = -0.3 
+        self.angular.x = 0
+        self.angular.y = 0
+        self.angular.z = -0.3 
         
         return msg
 
     def make_spiral_twist(self):
         msg=Twist()
         ... # fill up the twist msg for spiral motion
-        linear.x = 1
-        linear.y = 0
-        linear.z = 0
+        self.linear.x = 1
+        self.linear.y = 0
+        self.linear.z = 0
         
-        angular.x = 0
-        angular.y = 0
-        angular.z = -0.3
+        self.angular.x = 0
+        self.angular.y = 0
+        self.angular.z = -0.3
         
         #radius += linear.x
         return msg
     
     def make_acc_line_twist(self):
         msg=Twist()
-        linear.x = 1
-        linear.y = 0
-        linear.z = 0
+        self.linear.x = 1
+        self.linear.y = 0
+        self.linear.z = 0
         
-        angular.x = 0
-        angular.y = 0
-        angular.z = 0
+        self.angular.x = 0
+        self.angular.y = 0
+        self.angular.z = 0
         ... # fill up the twist msg for line motion
         return msg
 
@@ -206,8 +207,7 @@ if __name__=="__main__":
         ME=motion_executioner(motion_type=SPIRAL)
 
     else:
-        print(f"we don't have {arg.motion.lower()} motion type")
-
+        print(f"we don't have {args.motion.lower()} motion type")
 
     
     try:

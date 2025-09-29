@@ -87,7 +87,7 @@ def euler_from_quaternion(quat):
     quat = [x, y, z, w]
     """
     
-    .# just unpack yaw
+    # just unpack yaw
     quat_list = [quat.x, quat.y, quat.z, quat.w]
     (roll, pitch, yaw) = euler_from_quaternion(quat_list)
      	   	
