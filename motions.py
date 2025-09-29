@@ -59,7 +59,7 @@ class motion_executioner(Node):
         self.odom_sub = self.create_subscription(Odometry, '/odom', self.odom_callback,qos)
         
         # LaserScan subscription 
-        self.laser_scan_sub = self.create_subscription(LaserScan, '/scan', self.odom_callback,qos)
+        self.laser_scan_sub = self.create_subscription(LaserScan, '/scan', self.laser_callback,qos)
 
         
         self.create_timer(0.1, self.timer_callback)
@@ -75,15 +75,15 @@ class motion_executioner(Node):
         acc_x = imu_msg.linear_acceleration.x
         acc_y = imu_msg.linear_acceleration.y
 
-        ang_vel =  imu_msg._angular_velocity.z #When you turn the robot its about z
+        ang_vel =  imu_msg.angular_velocity.z #When you turn the robot its about z
         time_stamp = Time.from_msg(imu_msg.header.stamp).nanoseconds
-        log_data = [acc_x,acc_y,ang_vel,time_stamp,log_data]
+        log_data = [acc_x,acc_y,ang_vel,time_stamp]
 
         # Pass the values to the logger
         self.imu_logger.log_values(log_data)
 
         #For testing later
-        self.imu_flag= True
+        self.imu_initialized= True
         
     def odom_callback(self, odom_msg: Odometry):
         x = odom_msg.pose.pose.position.x
@@ -91,19 +91,20 @@ class motion_executioner(Node):
 
 
         orientation = odom_msg.pose.pose.orientation
+        orientation_list = [orientation.x,orientation.y,orientation.z,orientation.w]
 
         #Some dummy shit for converting to quaternion
-        yaw = euler_from_quaternion(orientation.x,orientation.y,orientation.z,orientation.w)
+        yaw = euler_from_quaternion(orientation_list)
         time_stamp_odom = Time.from_msg(odom_msg.header.stamp).nanoseconds
 
-        log_data = [x,y,time_stamp_odom,orientation]
+        log_data = [x,y,yaw,time_stamp_odom]
         self.odom_logger.log_values(log_data)
 
-        self.odom_flag = True
+        self.odom_initialized = True
                   
     def laser_callback(self, laser_msg: LaserScan):
 
-        ranges = laser_msg.ranges
+        ranges = laser_msg.ranges   
         angle_increment = laser_msg.angle_increment
         laser_time = Time.from_msg(laser_msg.header.stamp).nanoseconds
 
@@ -111,7 +112,7 @@ class motion_executioner(Node):
 
         self.laser_logger.log_values(log_data)
 
-        self.laser_flag = True
+        self.laser_initialized = True
 
     def timer_callback(self):
         
@@ -144,54 +145,47 @@ class motion_executioner(Node):
     def make_circular_twist(self):
         
         msg=Twist()
-        ... # fill up the twist msg for circular motion
-        self.linear.x = 0
-        self.linear.y = 0
-        self.linear.z = 0
+        msg.linear.x = 0.5
+        msg.linear.y = 0.0
+        msg.linear.z = 0.0
         
-        self.angular.x = 0
-        self.angular.y = 0
-        self.angular.z = -0.3 
+        msg.angular.x = 0.0
+        msg.angular.y = 0.0
+        msg.angular.z = -2.0
         
         return msg
 
     def make_spiral_twist(self):
         msg=Twist()
-        ... # fill up the twist msg for spiral motion
-        self.linear.x = 1
-        self.linear.y = 0
-        self.linear.z = 0
+        msg.linear.x = 1.0
+        msg.linear.y = 0.0
+        msg.linear.z = 0.0
         
-        self.angular.x = 0
-        self.angular.y = 0
-        self.angular.z = -0.3
+        msg.angular.x = 0.0
+        msg.angular.y = 0.0
+        msg.angular.z = -0.3
         
         #radius += linear.x
         return msg
     
     def make_acc_line_twist(self):
         msg=Twist()
-        self.linear.x = 1
-        self.linear.y = 0
-        self.linear.z = 0
+        msg.linear.x = 1.0
+        msg.linear.y = 0.0
+        msg.linear.z = 0.0
         
-        self.angular.x = 0
-        self.angular.y = 0
-        self.angular.z = 0
-        ... # fill up the twist msg for line motion
+        msg.angular.x = 0.0
+        msg.angular.y = 0.0
+        msg.angular.z = 0.0
+
         return msg
 
 import argparse
 
 if __name__=="__main__":
     
-
     argParser=argparse.ArgumentParser(description="input the motion type")
-
-
     argParser.add_argument("--motion", type=str, default="circle")
-
-
 
     rclpy.init()
 
@@ -214,3 +208,6 @@ if __name__=="__main__":
         rclpy.spin(ME)
     except KeyboardInterrupt:
         print("Exiting")
+    finally:
+        ME.destroy_node()
+        rclpy.shutdown()

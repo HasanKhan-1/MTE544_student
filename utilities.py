@@ -1,5 +1,5 @@
 from math import atan2, asin, sqrt
-from tf_transformations import quaternion_from_euler 
+from tf_transformations import euler_from_quaternion as tf_euler_from_quaternion
 
 M_PI=3.1415926535
 
@@ -25,8 +25,11 @@ class Logger:
             vals_str=""
 
             # TODO Part 5: Write the values from the list to the file
-            ...
-            
+            for i,value in enumerate(values_list):
+                vals_str += str(value)
+                if i<len(values_list)-1:
+                    vals_str += ", " #Adds commas if u still have vals to add
+
             vals_str+="\n"
             
             file.write(vals_str)
@@ -86,11 +89,9 @@ def euler_from_quaternion(quat):
     Convert quaternion (w in last place) to euler roll, pitch, yaw.
     quat = [x, y, z, w]
     """
-    
+
     # just unpack yaw
-    quat_list = [quat.x, quat.y, quat.z, quat.w]
-    (roll, pitch, yaw) = euler_from_quaternion(quat_list)
-     	   	
+    (roll, pitch, yaw) = tf_euler_from_quaternion(quat)     	   	
     return yaw
 
 
