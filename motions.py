@@ -93,7 +93,7 @@ class motion_executioner(Node):
         orientation = odom_msg.pose.pose.orientation
         orientation_list = [orientation.x,orientation.y,orientation.z,orientation.w]
 
-        #Some dummy shit for converting to quaternion
+        #Some dummy stuff for converting to quaternion
         yaw = euler_from_quaternion(orientation_list)
         time_stamp_odom = Time.from_msg(odom_msg.header.stamp).nanoseconds
 
@@ -157,13 +157,13 @@ class motion_executioner(Node):
 
     def make_spiral_twist(self):
         msg=Twist()
-        msg.linear.x = 1.0
+        msg.linear.x = 0.0
         msg.linear.y = 0.0
         msg.linear.z = 0.0
         
         msg.angular.x = 0.0
         msg.angular.y = 0.0
-        msg.angular.z = -0.3
+        msg.angular.z = -5.0
         
         #radius += linear.x
         return msg
