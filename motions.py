@@ -63,6 +63,7 @@ class motion_executioner(Node):
         
         # LaserScan subscription 
         self.laser_scan_sub = self.create_subscription(LaserScan, '/scan', self.laser_callback,qos)
+        self.laser_scan_sub = self.create_subscription(LaserScan, '/scan', self.laser_callback,qos)
 
         
         self.create_timer(0.1, self.timer_callback)
@@ -79,7 +80,9 @@ class motion_executioner(Node):
         acc_y = imu_msg.linear_acceleration.y
 
         ang_vel =  imu_msg.angular_velocity.z #When you turn the robot its about z
+        ang_vel =  imu_msg.angular_velocity.z #When you turn the robot its about z
         time_stamp = Time.from_msg(imu_msg.header.stamp).nanoseconds
+        log_data = [acc_x,acc_y,ang_vel,time_stamp]
         log_data = [acc_x,acc_y,ang_vel,time_stamp]
 
         # Pass the values to the logger
@@ -87,22 +90,29 @@ class motion_executioner(Node):
 
         #For testing later
         self.imu_initialized= True
+        self.imu_initialized= True
         
     def odom_callback(self, odom_msg: Odometry):
         x = odom_msg.pose.pose.position.x
         y = odom_msg.pose.pose.position.y
 
 
+
         orientation = odom_msg.pose.pose.orientation
         orientation_list = [orientation.x,orientation.y,orientation.z,orientation.w]
+        orientation_list = [orientation.x,orientation.y,orientation.z,orientation.w]
 
+        #Some dummy stuff for converting to quaternion
+        yaw = euler_from_quaternion(orientation_list)
         #Some dummy stuff for converting to quaternion
         yaw = euler_from_quaternion(orientation_list)
         time_stamp_odom = Time.from_msg(odom_msg.header.stamp).nanoseconds
 
         log_data = [x,y,yaw,time_stamp_odom]
+        log_data = [x,y,yaw,time_stamp_odom]
         self.odom_logger.log_values(log_data)
 
+        self.odom_initialized = True
         self.odom_initialized = True
                   
     def laser_callback(self, laser_msg: LaserScan):
@@ -157,7 +167,13 @@ class motion_executioner(Node):
         msg.linear.x = 0.5
         msg.linear.y = 0.0
         msg.linear.z = 0.0
+        msg.linear.x = 0.5
+        msg.linear.y = 0.0
+        msg.linear.z = 0.0
         
+        msg.angular.x = 0.0
+        msg.angular.y = 0.0
+        msg.angular.z = -2.0
         msg.angular.x = 0.0
         msg.angular.y = 0.0
         msg.angular.z = -2.0
@@ -173,6 +189,9 @@ class motion_executioner(Node):
         msg.angular.x = 0.0
         msg.angular.y = 0.0
         msg.angular.z = -5.0
+        msg.angular.x = 0.0
+        msg.angular.y = 0.0
+        msg.angular.z = -5.0
         
         #radius += linear.x
         return msg
@@ -182,7 +201,14 @@ class motion_executioner(Node):
         msg.linear.x = 1.0
         msg.linear.y = 0.0
         msg.linear.z = 0.0
+        msg.linear.x = 1.0
+        msg.linear.y = 0.0
+        msg.linear.z = 0.0
         
+        msg.angular.x = 0.0
+        msg.angular.y = 0.0
+        msg.angular.z = 0.0
+
         msg.angular.x = 0.0
         msg.angular.y = 0.0
         msg.angular.z = 0.0
@@ -192,6 +218,7 @@ class motion_executioner(Node):
 import argparse
 
 if __name__=="__main__":
+    
     
     argParser=argparse.ArgumentParser(description="input the motion type")
     argParser.add_argument("--motion", type=str, default="circle")
@@ -211,12 +238,16 @@ if __name__=="__main__":
 
     else:
         print(f"we don't have {args.motion.lower()} motion type")
+        print(f"we don't have {args.motion.lower()} motion type")
 
     
     try:
         rclpy.spin(ME)
     except KeyboardInterrupt:
         print("Exiting")
+    finally:
+        ME.destroy_node()
+        rclpy.shutdown()
     finally:
         ME.destroy_node()
         rclpy.shutdown()
