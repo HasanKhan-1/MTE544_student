@@ -206,3 +206,12 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 .DS_Store
+VMkey.pub
+VMkey
+lab_1_prt_6/.~lock.laser_content_line.csv#
+laser_data_trimmed.csv
+odom_content_line.csv
+imu_content_line.csv
+laser_content_line.csv
+MTE544_-hasanlabOne.zip
+MTE544_-hasanlabOne/MTE544_student-labOne/.gitignore

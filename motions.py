@@ -6,6 +6,8 @@ from rclpy.node import Node
 from utilities import Logger, euler_from_quaternion
 from rclpy.qos import QoSProfile
 
+from math import sin, cos, isfinite
+
 # TODO Part 3: Import message types needed:  DONE
     # For sending velocity commands to the robot: Twist
     # For the sensors: Imu, LaserScan, and Odometry
@@ -48,7 +50,8 @@ class motion_executioner(Node):
         self.laser_logger=Logger('laser_content_'+str(motion_types[motion_type])+'.csv', headers=["ranges", "angle_increment", "stamp"])
         
         # TODO Part 3: Create the QoS profile by setting the proper parameters in (...) (Based on wether we are using simulation or acc robot)
-        qos=QoSProfile(depth =10)
+
+        qos=QoSProfile(reliability=2, durability =2, history=1,depth=10)
 
         # TODO Part 5: Create below the subscription to the topics corresponding to the respective sensors
 
@@ -59,7 +62,7 @@ class motion_executioner(Node):
         self.odom_sub = self.create_subscription(Odometry, '/odom', self.odom_callback,qos)
         
         # LaserScan subscription 
-        self.laser_scan_sub = self.create_subscription(LaserScan, '/scan', self.odom_callback,qos)
+        self.laser_scan_sub = self.create_subscription(LaserScan, '/scan', self.laser_callback,qos)
 
         
         self.create_timer(0.1, self.timer_callback)
@@ -75,42 +78,49 @@ class motion_executioner(Node):
         acc_x = imu_msg.linear_acceleration.x
         acc_y = imu_msg.linear_acceleration.y
 
-        ang_vel =  imu_msg._angular_velocity.z #When you turn the robot its about z
+        ang_vel =  imu_msg.angular_velocity.z #When you turn the robot its about z
         time_stamp = Time.from_msg(imu_msg.header.stamp).nanoseconds
-        log_data = [acc_x,acc_y,ang_vel,time_stamp,log_data]
+        log_data = [acc_x,acc_y,ang_vel,time_stamp]
 
         # Pass the values to the logger
         self.imu_logger.log_values(log_data)
 
         #For testing later
-        self.imu_flag= True
+        self.imu_initialized= True
         
     def odom_callback(self, odom_msg: Odometry):
         x = odom_msg.pose.pose.position.x
         y = odom_msg.pose.pose.position.y
 
-        orientation = odom_msg.pose.pose.orientation
 
-        #Some dummy shit for converting to quaternion
-        _,_,th = euler_from_quaternion()
+        orientation = odom_msg.pose.pose.orientation
+        orientation_list = [orientation.x,orientation.y,orientation.z,orientation.w]
+
+        #Some dummy stuff for converting to quaternion
+        yaw = euler_from_quaternion(orientation_list)
         time_stamp_odom = Time.from_msg(odom_msg.header.stamp).nanoseconds
 
-        log_data = [x,y,time_stamp_odom,orientation]
+        log_data = [x,y,yaw,time_stamp_odom]
         self.odom_logger.log_values(log_data)
 
-        self.odom_flag = True
+        self.odom_initialized = True
                   
     def laser_callback(self, laser_msg: LaserScan):
-
-        ranges = laser_msg.ranges
+        ranges = laser_msg.ranges  
         angle_increment = laser_msg.angle_increment
         laser_time = Time.from_msg(laser_msg.header.stamp).nanoseconds
 
-        log_data = [ranges, angle_increment, laser_time]
-
-        self.laser_logger.log_values(log_data)
-
-        self.laser_flag = True
+        for i in range(len(ranges)):
+            if not isfinite(ranges[i]):
+                continue
+            
+            x = ranges[i] * cos(angle_increment * i)
+            y = ranges[i] * sin(angle_increment * i)
+            
+            log_data = [x, y, ranges[i]]  #,angle_increment * i, laser_time
+            self.laser_logger.log_values(log_data)
+        
+        self.laser_initialized = True
 
     def timer_callback(self):
         
@@ -126,6 +136,7 @@ class motion_executioner(Node):
             cmd_vel_msg=self.make_circular_twist()
         
         elif self.type==SPIRAL:
+            self.radius_ += 0.01
             cmd_vel_msg=self.make_spiral_twist()
                         
         elif self.type==ACC_LINE:
@@ -143,54 +154,47 @@ class motion_executioner(Node):
     def make_circular_twist(self):
         
         msg=Twist()
-        ... # fill up the twist msg for circular motion
-        linear.x = 0
-        linear.y = 0
-        linear.z = 0
+        msg.linear.x = 0.5
+        msg.linear.y = 0.0
+        msg.linear.z = 0.0
         
-        angular.x = 0
-        angular.y = 0
-        angular.z = -0.3 
+        msg.angular.x = 0.0
+        msg.angular.y = 0.0
+        msg.angular.z = -2.0
         
         return msg
 
     def make_spiral_twist(self):
         msg=Twist()
-        ... # fill up the twist msg for spiral motion
-        linear.x = 1
-        linear.y = 0
-        linear.z = 0
+        msg.linear.x = 0.5 + self.radius_
+        msg.linear.y = 0.0
+        msg.linear.z = 0.0
         
-        angular.x = 0
-        angular.y = 0
-        angular.z = -0.3
+        msg.angular.x = 0.0
+        msg.angular.y = 0.0
+        msg.angular.z = -5.0
         
         #radius += linear.x
         return msg
     
     def make_acc_line_twist(self):
         msg=Twist()
-        linear.x = 1
-        linear.y = 0
-        linear.z = 0
+        msg.linear.x = 1.0
+        msg.linear.y = 0.0
+        msg.linear.z = 0.0
         
-        angular.x = 0
-        angular.y = 0
-        angular.z = 0
-        ... # fill up the twist msg for line motion
+        msg.angular.x = 0.0
+        msg.angular.y = 0.0
+        msg.angular.z = 0.0
+
         return msg
 
 import argparse
 
 if __name__=="__main__":
     
-
     argParser=argparse.ArgumentParser(description="input the motion type")
-
-
     argParser.add_argument("--motion", type=str, default="circle")
-
-
 
     rclpy.init()
 
@@ -206,11 +210,13 @@ if __name__=="__main__":
         ME=motion_executioner(motion_type=SPIRAL)
 
     else:
-        print(f"we don't have {arg.motion.lower()} motion type")
-
+        print(f"we don't have {args.motion.lower()} motion type")
 
     
     try:
         rclpy.spin(ME)
     except KeyboardInterrupt:
         print("Exiting")
+    finally:
+        ME.destroy_node()
+        rclpy.shutdown()
