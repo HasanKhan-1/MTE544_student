@@ -30,11 +30,6 @@ class Logger:
                 if i<len(values_list)-1:
                     vals_str += ", " #Adds commas if u still have vals to add
 
-            for i,value in enumerate(values_list):
-                vals_str += str(value)
-                if i<len(values_list)-1:
-                    vals_str += ", " #Adds commas if u still have vals to add
-
             vals_str+="\n"
             
             file.write(vals_str)

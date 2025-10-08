@@ -63,9 +63,7 @@ class motion_executioner(Node):
         
         # LaserScan subscription 
         self.laser_scan_sub = self.create_subscription(LaserScan, '/scan', self.laser_callback,qos)
-        self.laser_scan_sub = self.create_subscription(LaserScan, '/scan', self.laser_callback,qos)
 
-        
         self.create_timer(0.1, self.timer_callback)
 
 
@@ -80,16 +78,13 @@ class motion_executioner(Node):
         acc_y = imu_msg.linear_acceleration.y
 
         ang_vel =  imu_msg.angular_velocity.z #When you turn the robot its about z
-        ang_vel =  imu_msg.angular_velocity.z #When you turn the robot its about z
         time_stamp = Time.from_msg(imu_msg.header.stamp).nanoseconds
-        log_data = [acc_x,acc_y,ang_vel,time_stamp]
         log_data = [acc_x,acc_y,ang_vel,time_stamp]
 
         # Pass the values to the logger
         self.imu_logger.log_values(log_data)
 
         #For testing later
-        self.imu_initialized= True
         self.imu_initialized= True
         
     def odom_callback(self, odom_msg: Odometry):
@@ -100,25 +95,20 @@ class motion_executioner(Node):
 
         orientation = odom_msg.pose.pose.orientation
         orientation_list = [orientation.x,orientation.y,orientation.z,orientation.w]
-        orientation_list = [orientation.x,orientation.y,orientation.z,orientation.w]
 
         #Some dummy stuff for converting to quaternion
         yaw = euler_from_quaternion(orientation_list)
-        #Some dummy stuff for converting to quaternion
-        yaw = euler_from_quaternion(orientation_list)
+
         time_stamp_odom = Time.from_msg(odom_msg.header.stamp).nanoseconds
 
         log_data = [x,y,yaw,time_stamp_odom]
-        log_data = [x,y,yaw,time_stamp_odom]
         self.odom_logger.log_values(log_data)
 
-        self.odom_initialized = True
         self.odom_initialized = True
                   
     def laser_callback(self, laser_msg: LaserScan):
         ranges = laser_msg.ranges  
         angle_increment = laser_msg.angle_increment
-        laser_time = Time.from_msg(laser_msg.header.stamp).nanoseconds
 
         for i in range(len(ranges)):
             if not isfinite(ranges[i]):
@@ -167,16 +157,12 @@ class motion_executioner(Node):
         msg.linear.x = 0.5
         msg.linear.y = 0.0
         msg.linear.z = 0.0
-        msg.linear.x = 0.5
-        msg.linear.y = 0.0
-        msg.linear.z = 0.0
+
         
         msg.angular.x = 0.0
         msg.angular.y = 0.0
         msg.angular.z = -2.0
-        msg.angular.x = 0.0
-        msg.angular.y = 0.0
-        msg.angular.z = -2.0
+
         
         return msg
 
@@ -186,9 +172,7 @@ class motion_executioner(Node):
         msg.linear.y = 0.0
         msg.linear.z = 0.0
         
-        msg.angular.x = 0.0
-        msg.angular.y = 0.0
-        msg.angular.z = -5.0
+
         msg.angular.x = 0.0
         msg.angular.y = 0.0
         msg.angular.z = -5.0
@@ -198,16 +182,10 @@ class motion_executioner(Node):
     
     def make_acc_line_twist(self):
         msg=Twist()
+
         msg.linear.x = 1.0
         msg.linear.y = 0.0
         msg.linear.z = 0.0
-        msg.linear.x = 1.0
-        msg.linear.y = 0.0
-        msg.linear.z = 0.0
-        
-        msg.angular.x = 0.0
-        msg.angular.y = 0.0
-        msg.angular.z = 0.0
 
         msg.angular.x = 0.0
         msg.angular.y = 0.0
@@ -238,7 +216,6 @@ if __name__=="__main__":
 
     else:
         print(f"we don't have {args.motion.lower()} motion type")
-        print(f"we don't have {args.motion.lower()} motion type")
 
     
     try:
@@ -248,6 +225,4 @@ if __name__=="__main__":
     finally:
         ME.destroy_node()
         rclpy.shutdown()
-    finally:
-        ME.destroy_node()
-        rclpy.shutdown()
+
