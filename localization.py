@@ -4,10 +4,12 @@ from utilities import Logger, euler_from_quaternion
 from rclpy.time import Time
 from rclpy.node import Node
 
-from rclpy.qos import QoSProfile
+from rclpy.qos import QoSProfile, QoSReliabilityPolicy,QoSDurabilityPolicy, QoSHistoryPolicy
 from nav_msgs.msg import Odometry as odom
 
 from rclpy import init, spin
+
+import rclpy
 
 rawSensor = 0
 class localization(Node):
@@ -16,25 +18,52 @@ class localization(Node):
 
         super().__init__("localizer")
         
-        # TODO Part 3: Define the QoS profile variable based on whether you are using the simulation (Turtlebot 3 Burger) or the real robot (Turtlebot 4)
+        # CHECK Part 3: Define the QoS profile variable based on whether you are using the simulation (Turtlebot 3 Burger) or the real robot (Turtlebot 4)
         # Remember to define your QoS profile based on the information available in "ros2 topic info /odom --verbose" as explained in Tutorial 3
+        use_Sim = True # CONFIGURE
 
-        odom_qos=...
+        if use_Sim:
+            odom_qos = QoSProfile(
+                reliability = QoSReliabilityPolicy.BEST_EFFORT,
+                durability = QoSDurabilityPolicy.VOLATILE,
+                history = 1,
+                depth = 5 #Less wacky data so no need for it to be large
+            )
+        else: 
+            odom_qos = QoSProfile(
+                reliability = QoSReliabilityPolicy.BEST_EFFORT,
+                durability = QoSDurabilityPolicy.VOLATILE,
+                history = 1,
+                depth = 10
+            )
+
         
         self.loc_logger=Logger("robot_pose.csv", ["x", "y", "theta", "stamp"])
         self.pose=None
         
         if localizationType == rawSensor:
-        # TODO Part 3: subscribe to the position sensor topic (Odometry)
-        # ...
+        # CHECK Part 3: subscribe to the position sensor topic (Odometry)
+            self.create_subscription(odom,"/odom", self.odom_callback,qos_profile=odom_qos)
         else:
             print("This type doesn't exist", sys.stderr)
     
     
     def odom_callback(self, pose_msg):
-        
-        # TODO Part 3: Read x,y, theta, and record the stamp
-        self.pose=[ ... ]
+
+        pos = pose_msg.pose.pose.position
+        x = pos.x
+        y = pos.y
+
+        q = pose_msg.pose.pose.orientation
+
+        #Convert quaternion vals to yaw!
+        theta= euler_from_quaternion([q.x,q.y,q.z,q.w])
+
+        #Stamp value from topic 
+        stamp = pose_msg.header.stamp
+
+        # CHECK Part 3: Read x,y, theta, and record the stamp
+        self.pose=[x, y, theta, stamp]
         
         # Log the data
         self.loc_logger.log_values([self.pose[0], self.pose[1], self.pose[2], Time.from_msg(self.pose[3]).nanoseconds])
@@ -42,7 +71,15 @@ class localization(Node):
     def getPose(self):
         return self.pose
 
-# TODO Part 3
+# CHECK Part 3
 # Here put a guard that makes the node run, ONLY when run as a main thread!
 # This is to make sure this node functions right before using it in decision.py
     
+if __name__ == "__main__":
+    rclpy.init()
+    node = localization()
+    try: 
+        rclpy.spin(node)
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
