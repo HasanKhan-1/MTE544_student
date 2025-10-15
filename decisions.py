@@ -29,8 +29,8 @@ class decision_maker(Node):
 
         super().__init__("decision_maker")
 
-        #TODO Part 4: Create a publisher for the topic responsible for robot's motion
-        self.publisher=... 
+        #CHECK Part 4: Create a publisher for the topic responsible for robot's motion
+        self.publisher = self.create_publisher(publisher_msg, publishing_topic, qos_publisher) 
 
         publishing_period=1/rate
         
@@ -111,8 +111,14 @@ class decision_maker(Node):
         
         velocity, yaw_rate = self.controller.vel_request(self.localizer.getPose(), self.goal, True)
 
-        #TODO Part 4: Publish the velocity to move the robot
-        ... 
+        #CHECK Part 4: Publish the velocity to move the robot
+        velocity, yaw_rate = self.controller.vel_request(self.localizer.getPose(), self.goal, True)
+
+        #Publish the vel to move the robot
+        # print(velocity)
+        vel_msg.linear.x = float(velocity[0])
+        vel_msg.angular.z = float(yaw_rate[0])
+        self.publisher.publish(vel_msg)
 
 import argparse
 
@@ -140,15 +146,23 @@ def main(args=None):
             history = 1,
             depth = 10
         )
-    
+        # cmd_vel QoS should match subscribers (use RELIABLE if subscribers request RELIABILITY)
+    cmd_vel_qos = QoSProfile(
+        reliability = QoSReliabilityPolicy.RELIABLE,
+        durability = QoSDurabilityPolicy.VOLATILE,
+        history = 1,
+        depth = 10
+    )
 
-    # TODO Part 4: instantiate the decision_maker with the proper parameters for moving the robot
+    # CHECK Part 4: instantiate the decision_maker with the proper parameters for moving the robot
     if args.motion.lower() == "point":
-        DM=decision_maker(...)
+        goal_point = [1.0, 0.0]  # example point goal (x, y) — change as required
+        DM = decision_maker(Twist, "/cmd_vel", cmd_vel_qos, goal_point, rate=10, motion_type=POINT_PLANNER)
     elif args.motion.lower() == "trajectory":
-        DM=decision_maker(...)
+        # pass a trajectory descriptor or None depending on your planner implementation
+        DM = decision_maker(Twist, "/cmd_vel", cmd_vel_qos, None, rate=10, motion_type=TRAJECTORY_PLANNER)
     else:
-        print("invalid motion type", file=sys.stderr)        
+        print("invalid motion type", file=sys.stderr)       
     
     
     
