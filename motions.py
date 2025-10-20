@@ -62,7 +62,7 @@ class motion_executioner(Node):
         self.odom_sub = self.create_subscription(Odometry, '/odom', self.odom_callback,qos)
         
         # LaserScan subscription 
-        self.laser_scan_sub = self.create_subscription(LaserScan, '/scan', self.laser_callback,qos)
+        self.laser_scan_sub = self.create_subscription(LaserScan, '/scan',self.laser_callback,qos)
 
         self.create_timer(0.1, self.timer_callback)
 
@@ -225,4 +225,3 @@ if __name__=="__main__":
     finally:
         ME.destroy_node()
         rclpy.shutdown()
-

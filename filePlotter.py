@@ -4,7 +4,9 @@
 
 import matplotlib.pyplot as plt
 from utilities import FileReader
+from utilities import Logger
 
+# This function is modified for laser data currently, regular code commented out
 def plot_errors(filename):
     
     headers, values=FileReader(filename).read_file() 
@@ -14,12 +16,20 @@ def plot_errors(filename):
     for val in values:
         time_list.append(val[-1] - first_stamp)
 
-    for i in range(0, len(headers) - 1):
-        plt.plot(time_list, [lin[i] for lin in values], label= headers[i]+ " linear")
-    
+    #for i in range(0, len(headers) - 1):
+    #    plt.plot(time_list, [lin[i] for lin in values], label= headers[i]+ " spiral")
     #plt.plot([lin[0] for lin in values], [lin[1] for lin in values])
+    
+    x = [row[0] for row in values]
+    y = [row[1] for row in values]
+    plt.plot(x, y, marker = 'o', label="x-y coordinates line")
+
+    
     plt.legend()
     plt.grid()
+    plt.title(filename)
+    plt.xlabel("X position")
+    plt.ylabel("Y position")
     plt.show()
     
 import argparse
