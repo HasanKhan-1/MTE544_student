@@ -25,7 +25,18 @@ class planner:
 
     # TODO Part 6: Implement the trajectories here
     def trajectory_planner(self):
-        pass
+        timeStep = 0.01
+        trajectory = []
+        # Parabola
+        for x in range(0, int(1.5/timeStep)):
+            trajectory.append([x*timeStep, (timeStep*x)**2])
+
+        # Sigmoid
+        #or x in range(0, int(5/timeStep)):
+        #    trajectory.append([x*timeStep, 2/(1 + 2.71828**(-2*(timeStep))) - 1])
+        
+        
+        return trajectory
         # the return should be a list of trajectory points: [ [x1,y1], ..., [xn,yn]]
         # return 
 
