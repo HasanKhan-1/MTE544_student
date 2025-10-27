@@ -8,9 +8,9 @@ PI=2 # proportional and integral
 PID=3 # proportional, integral, derivative
 
 class PID_ctrl:
-    
-    def __init__(self, type_, kp=1.2,kv=0.8,ki=0.2, history_length=3, filename_="errors.csv"):
-        
+
+    def __init__(self, type_, kp=1.0, kv=0, ki=0.0, history_length=3, filename_="errors.csv"):
+
         # Data for the controller
         self.history_length=history_length
         self.history=[]
@@ -63,10 +63,12 @@ class PID_ctrl:
             dt_avg+=dt
 
             # use constant dt if the messages arrived inconsistent
-            # for example dt=0.1 overwriting the calculation          
+            # for example dt=0.1 overwriting the calculation     
+            if (dt < 1e9):
+                dt = 0.1     
             
             # TODO Part 5: calculate the error dot 
-            # error_dot+= ... 
+            error_dot += (self.history[i][0] - self.history[i-1][0]) / dt
             
         error_dot/=len(self.history)
         dt_avg/=len(self.history)
@@ -75,7 +77,7 @@ class PID_ctrl:
         sum_=0
         for hist in self.history:
             # TODO Part 5: Gather the integration
-            # sum_+=...
+            sum_+= hist[0]
             pass
         
         error_int=sum_*dt_avg
@@ -89,13 +91,11 @@ class PID_ctrl:
         
         # TODO Part 5: Implement the control law corresponding to each type of controller
         elif self.type == PD:
-            pass
-            # return ... # complete
+            return self.kp*latest_error + self.kv*error_dot# complete
         
         elif self.type == PI:
-            pass
-            # return ... # complete
+            # pass
+            return self.kp * latest_error + self.ki*error_int # complete
         
         elif self.type == PID:
-            pass
-            # return ... # complete
+            return self.kp * latest_error + self.ki*error_int  + self.kv*error_dot##  complete
