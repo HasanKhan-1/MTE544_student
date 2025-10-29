@@ -9,7 +9,7 @@ class planner:
         self.type=type_
 
     
-    def plan(self, goalPoint=[-1.0, -1.0]):
+    def plan(self, goalPoint=[1.0, 5.0]):
         
         if self.type==POINT_PLANNER:
             return self.point_planner(goalPoint)
@@ -28,12 +28,12 @@ class planner:
         timeStep = 0.03
         trajectory = []
         # Parabola
-        for x in range(0, int(1.5/timeStep)):
-          trajectory.append([x*timeStep, (timeStep*x)**2])
+        # for x in range(0, int(1.5/timeStep)):
+        #   trajectory.append([x*timeStep, (timeStep*x)**2])
 
         # Sigmoid
-        #for x in range(0, int(2.5 / timeStep)):
-        #    trajectory.append([x * timeStep, 2 / (1 + 2.71828 ** (-2 * x * timeStep)) - 1])
+        for x in range(0, int(2.5 / timeStep)):
+           trajectory.append([x * timeStep, 2 / (1 + 2.71828 ** (-2 * x * timeStep)) - 1])
         
         print(f"First point: {trajectory[0]}")
         print(f"Last point: {trajectory[-1]}")
