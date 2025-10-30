@@ -28,16 +28,16 @@ class planner:
         timeStep = 0.03
         trajectory = []
         # Parabola
-        # for x in range(0, int(1.5/timeStep)):
-        #   trajectory.append([x*timeStep, (timeStep*x)**2])
+        for x in range(0, int(1.5/timeStep)):
+          trajectory.append([x*timeStep, (timeStep*x)**2])
 
         # Sigmoid
-        for x in range(0, int(2.5 / timeStep)):
-           trajectory.append([x * timeStep, 2 / (1 + 2.71828 ** (-2 * x * timeStep)) - 1])
+        # for x in range(0, int(2.5 / timeStep)):
+        #    trajectory.append([x * timeStep, 2 / (1 + 2.71828 ** (-2 * x * timeStep)) - 1])
         
-        print(f"First point: {trajectory[0]}")
-        print(f"Last point: {trajectory[-1]}")
-        print(f"Total points: {len(trajectory)}")
+        # print(f"First point: {trajectory[0]}")
+        # print(f"Last point: {trajectory[-1]}")
+        # print(f"Total points: {len(trajectory)}")
 
         return trajectory
         # the return should be a list of trajectory points: [ [x1,y1], ..., [xn,yn]]

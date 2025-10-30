@@ -205,14 +205,3 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
-robot_pose_p_contrl.csv
-robot_pose_parabola.csv
-robot_pose_pd_contrl.csv
-robot_pose_pt3_pnt5.csv
-robot_pose_sigmoid.csv
-linear_p_contrl.csv
-linear_pd_contrl.csv
-linear.csv
-angular_p_contrl.csv
-angular_pd_contrl.csv
-angular.csv
