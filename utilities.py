@@ -1,15 +1,128 @@
+
+
+import numpy as np
+from sensor_msgs.msg import LaserScan
 from math import atan2, asin, sqrt
+from geometry_msgs.msg import Quaternion
+
+from tf2_ros import TransformBroadcaster
+from geometry_msgs.msg import TransformStamped
+
 
 M_PI=3.1415926535
 
-class Logger:
-    
-    def __init__(self, filename, headers=["e", "e_dot", "e_int", "stamp"]):
+def normalize_angle(theta):
+    while theta > M_PI:
+        theta -= 2 * M_PI
+
+
+    while theta < -M_PI:
+        theta += 2 * M_PI
+    return theta
+
+
+# def publishTransform(br, x,y,th, stamp, ego_odom_frame_id):
+#     t=TransformStamped()
+#     t.header.frame_id = "map"
+#     t.child_frame_id = ego_odom_frame_id
+#     t.header.stamp = stamp
+#     qt = quaternion_from_euler(th)
+
+#     t.transform.rotation =qt
+#     t.transform.translation.x = x
+#     t.transform.translation.y = y
+
+#     br.sendTransform(t)
+
+
+def publishTransform(br, x,y,th, stamp, ego_odom_frame_id):
+    # publish the tf in reversed the order to avoid tf tree error
+    t=TransformStamped()
+    t.header.frame_id = ego_odom_frame_id
+    t.child_frame_id = "map"
+    t.header.stamp = stamp
+    qt = quaternion_from_euler(-th)
+    inv_x = -x*np.cos(th) - y*np.sin(th)
+    inv_y = x*np.sin(th) - y*np.cos(th)
+    t.transform.rotation =qt
+    t.transform.translation.x = inv_x
+    t.transform.translation.y = inv_y
+
+    br.sendTransform(t)
+
+def quaternion_from_euler(th):
+    qt = Quaternion()
+    th = th
+    qt.z=np.sin(th/2)
+    qt.w=np.cos(th/2)
+    return qt
+
+def euler_from_quaternion(quat):
+    """
+    Convert quaternion (w in last place) to euler roll, pitch, yaw.
+    quat = [x, y, z, w]
+    """
+    x = quat.x
+    y = quat.y
+    z = quat.z
+    w = quat.w
+    sinr_cosp = 2 * (w * x + y * z)
+    cosr_cosp = 1 - 2 * (x * x + y * y)
+    roll = atan2(sinr_cosp, cosr_cosp)
+    sinp = 2 * (w * y - z * x)
+    pitch = asin(sinp)
+    siny_cosp = 2 * (w * z + x * y)
+    cosy_cosp = 1 - 2 * (y * y + z * z)
+    yaw = atan2(siny_cosp, cosy_cosp)
+    # just unpack yaw for tb
+    return yaw
+
+
+def calculate_linear_error(current_pose, goal_pose):
         
+    return sqrt( (current_pose[0] - goal_pose[0])**2 +
+                (current_pose[1] - goal_pose[1])**2 )
+
+def calculate_angular_error(current_pose, goal_pose):
+
+    error_angular= atan2(goal_pose[1]-current_pose[1],
+                        goal_pose[0]-current_pose[0]) - current_pose[2]
+    
+    if error_angular <= -M_PI:
+        error_angular += 2*M_PI
+    
+    
+    elif error_angular >= M_PI:
+        error_angular -= 2*M_PI
+    
+    return error_angular
+
+
+def convertScanToCartesian(laserScan: LaserScan):
+
+    angle_min = laserScan.angle_min
+    angle_increment = laserScan.angle_increment
+    range_min = laserScan.range_min
+    range_max = laserScan.range_max
+    ranges = np.array(laserScan.ranges)
+
+    valid_indices = np.where((ranges != 0) & (ranges <= range_max) & (ranges >= range_min)) 
+    valid_ranges = ranges[valid_indices]
+
+    angles = angle_min + valid_indices[0] * angle_increment
+
+    cartesian_points = np.column_stack((valid_ranges * np.cos(angles), valid_ranges * np.sin(angles)))
+    cartesian_points_homo = np.column_stack((cartesian_points, np.ones(cartesian_points.shape[0])))
+
+    return cartesian_points, cartesian_points_homo
+
+
+
+class Logger:
+    def __init__(self, filename, headers=["e", "e_dot", "e_int", "stamp"]):
         self.filename = filename
 
         with open(self.filename, 'w') as file:
-            
             header_str=""
 
             for header in headers:
@@ -24,9 +137,7 @@ class Logger:
     def log_values(self, values_list):
 
         with open(self.filename, 'a') as file:
-            
             vals_str=""
-            
             for value in values_list:
                 vals_str+=f"{value}, "
             
@@ -51,6 +162,8 @@ class FileReader:
         table=[]
         headers=[]
         with open(self.filename, 'r') as file:
+            # Skip the header line
+            
 
             if not read_headers:
                 for line in file:
@@ -80,62 +193,3 @@ class FileReader:
                 table.append(row)
         
         return headers, table
-    
-    
-
-# CHECK Part 3: Implement the conversion from Quaternion to Euler Angles
-def euler_from_quaternion(quat):
-    """
-    Convert quaternion (w in last place) to euler roll, pitch, yaw.
-    quat = [x, y, z, w]
-    """
-
-    # Extract the components of the quaternion
-    x,y,z,w = quat
-
-    # Yaw (z-axis rotation)
-    yaw = atan2(2.0 * (w * z + x * y), 1.0 - 2.0 * (y**2 + z**2))
-
-    return yaw
-
-
-#CHECK Part 4: Implement the calculation of the linear error
-def calculate_linear_error(current_pose, goal_pose):
-        
-    # Accept either [x,y] or [[x,y], ...] shapes for goal_pose
-    if isinstance(goal_pose, (list, tuple)) and len(goal_pose) > 0 and isinstance(goal_pose[0], (list, tuple)):
-        gp = goal_pose[0]
-    else:
-        gp = goal_pose
-
-    dx = gp[0] - current_pose[0]
-    dy = gp[1] - current_pose[1]
-
-    error_linear = sqrt(dx*dx + dy*dy)
-
-    return error_linear
-
-#CHECK Part 4: Implement the calculation of the angular error
-def calculate_angular_error(current_pose, goal_pose):
-
-    # Normalize goal shape like in linear error
-    if isinstance(goal_pose, (list, tuple)) and len(goal_pose) > 0 and isinstance(goal_pose[0], (list, tuple)):
-        gp = goal_pose[0]
-    else:
-        gp = goal_pose
-
-    dx = gp[0] - current_pose[0]
-    dy = gp[1] - current_pose[1]
-
-    desired_theta = atan2(dy, dx)
-    current_theta = current_pose[2]
-
-    error_angular = desired_theta - current_theta
-
-    # Wrap into [-π, π]
-    while error_angular > M_PI:
-        error_angular -= 2*M_PI
-    while error_angular < -M_PI:
-        error_angular += 2*M_PI
-    
-    return error_angular

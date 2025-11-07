@@ -1,85 +1,98 @@
 import sys
+import time
+from utilities import Logger
 
-from utilities import Logger, euler_from_quaternion
 from rclpy.time import Time
-from rclpy.node import Node
 
-from rclpy.qos import QoSProfile, QoSReliabilityPolicy,QoSDurabilityPolicy, QoSHistoryPolicy
+from utilities import *
+from rclpy.node import Node
+from geometry_msgs.msg import Twist
+
+
+from rclpy.qos import QoSProfile
 from nav_msgs.msg import Odometry as odom
 
-from rclpy import init, spin
+from rclpy import init, spin, spin_once
 
-import rclpy
+import numpy as np
+import message_filters
 
-rawSensor = 0
+
+
+rawSensors=0; particlesFilter=1
+
+
+odom_qos=QoSProfile(reliability=2, durability=2, history=1, depth=10)
+
+
 class localization(Node):
     
-    def __init__(self, localizationType=rawSensor):
+    def __init__(self, type_, loggerName="robotPose.csv", loggerHeaders=["odom_x", "odom_y", "odom_th", "odom_vx", "odom_yawrate","pf_x","pf_y","pf_th","stamp"]):
 
         super().__init__("localizer")
         
-        # CHECK Part 3: Define the QoS profile variable based on whether you are using the simulation (Turtlebot 3 Burger) or the real robot (Turtlebot 4)
-        # Remember to define your QoS profile based on the information available in "ros2 topic info /odom --verbose" as explained in Tutorial 3
-        use_Sim = True # CONFIGURE
-
-        if use_Sim:
-            odom_qos = QoSProfile(
-                reliability = QoSReliabilityPolicy.BEST_EFFORT,
-                durability = QoSDurabilityPolicy.VOLATILE,
-                history = 1,
-                depth = 5 #Less wacky data so no need for it to be large
-            )
-        else: 
-            odom_qos = QoSProfile(
-                reliability = QoSReliabilityPolicy.BEST_EFFORT,
-                durability = QoSDurabilityPolicy.VOLATILE,
-                history = 1,
-                depth = 10
-            )
-
-        
-        self.loc_logger=Logger("robot_pose.csv", ["x", "y", "theta", "stamp"])
+        self.loc_logger=Logger( loggerName , loggerHeaders)
         self.pose=None
         
-        if localizationType == rawSensor:
-        # CHECK Part 3: subscribe to the position sensor topic (Odometry)
-            self.create_subscription(odom,"/odom", self.odom_callback,qos_profile=odom_qos)
+        
+        if type_==rawSensors:
+            self.initRawSensors()
+
+        elif type_==particlesFilter:
+            self.initParticleFilter()
         else:
-            print("This type doesn't exist", sys.stderr)
+            print("We don't have this type for localization", sys.stderr)
+            return            
     
+        self.timelast=time.time()
+    
+    def initRawSensors(self):
+        self.create_subscription(odom, "/odom", self.odom_callback, qos_profile=odom_qos)
+
+    def initParticleFilter(self):
+        self.odom_pose_sub=message_filters.Subscriber(self, odom, "/odom", qos_profile=odom_qos)
+        self.pf_pose_sub=message_filters.Subscriber(self, odom, "/pf_pose", qos_profile=odom_qos)
+        time_syncher=message_filters.ApproximateTimeSynchronizer([self.odom_pose_sub, self.pf_pose_sub], queue_size=10, slop=0.1)
+        time_syncher.registerCallback(self.odom_and_pf_pose_callback)
+
+    def odom_and_pf_pose_callback(self, odom_msg: odom, pf_msg: odom):
+        # TODO: You need to use the pf_msg to update the pose of the robot [x, y, theta, stamp]
+        self.pose=[ ... ]
+        
+        # TODO: You need to log the values from the odom and the particle filter based on the headers
+        # TODO: odom values: x, y, theta, vx, yawrate
+        odom_values_list = [...]
+        # TODO: pf values: x, y, theta
+        pf_values_list = [...]
+
+        stamp = Time.from_msg(odom_msg.header.stamp).nanoseconds
+        # Put all the values in a list
+        values_to_log = odom_values_list + pf_values_list + [stamp]
+        self.loc_logger.log_values(values_to_log)
+
+        
     
     def odom_callback(self, pose_msg):
-
-        pos = pose_msg.pose.pose.position
-        x = pos.x
-        y = pos.y
-
-        q = pose_msg.pose.pose.orientation
-
-        #Convert quaternion vals to yaw!
-        theta= euler_from_quaternion([q.x,q.y,q.z,q.w])
-
-        #Stamp value from topic 
-        stamp = pose_msg.header.stamp
-
-        # CHECK Part 3: Read x,y, theta, and record the stamp
-        self.pose=[x, y, theta, stamp]
+        self.pose=[ pose_msg.pose.pose.position.x,
+                    pose_msg.pose.pose.position.y,
+                    euler_from_quaternion(pose_msg.pose.pose.orientation),
+                    pose_msg.header.stamp]
         
-        # Log the data
-        self.loc_logger.log_values([self.pose[0], self.pose[1], self.pose[2], Time.from_msg(self.pose[3]).nanoseconds])
-    
+        stamp = Time.from_msg(pose_msg.header.stamp).nanoseconds
+        # Put all the values in a list
+        values_to_log = [pose_msg.pose.pose.position.x, pose_msg.pose.pose.position.y, euler_from_quaternion(pose_msg.pose.pose.orientation), pose_msg.twist.twist.linear.x, pose_msg.twist.twist.angular.z, 0, 0, 0, stamp]
+        self.loc_logger.log_values(values_to_log)
+
+        
     def getPose(self):
         return self.pose
 
-# CHECK Part 3
-# Here put a guard that makes the node run, ONLY when run as a main thread!
-# This is to make sure this node functions right before using it in decision.py
+
+if __name__=="__main__":
     
-if __name__ == "__main__":
-    rclpy.init()
-    node = localization()
-    try: 
-        rclpy.spin(node)
-    finally:
-        node.destroy_node()
-        rclpy.shutdown()
+    init()
+    
+    LOCALIZER=localization()
+    
+    
+    spin(LOCALIZER)

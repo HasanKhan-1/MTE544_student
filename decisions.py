@@ -1,7 +1,7 @@
-# Imports
 
 
 import sys
+
 
 from utilities import euler_from_quaternion, calculate_angular_error, calculate_linear_error
 from pid import PID_ctrl
@@ -10,170 +10,154 @@ from rclpy import init, spin, spin_once
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
 
+
 from rclpy.qos import QoSProfile
 from nav_msgs.msg import Odometry as odom
 
-from localization import localization, rawSensor
+from localization import localization, rawSensors, particlesFilter
 
 from planner import TRAJECTORY_PLANNER, POINT_PLANNER, planner
 from controller import controller, trajectoryController
 
-# You may add any other imports you may need/want to use below
-# import ...
 
-from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSDurabilityPolicy
+from geometry_msgs.msg import PoseStamped
+
+
+from nav_msgs.msg import Path
+from geometry_msgs.msg import PoseStamped
+
+import time
 
 class decision_maker(Node):
-
     
-    def __init__(self, publisher_msg, publishing_topic, qos_publisher, goalPoint, rate=10, motion_type=POINT_PLANNER):
+    
+    def __init__(self, publisher_msg, publishing_topic, qos_publisher, rate=10, motion_type=POINT_PLANNER):
 
         super().__init__("decision_maker")
 
-        #CHECK Part 4: Create a publisher for the topic responsible for robot's motion
-        self.publisher = self.create_publisher(publisher_msg, publishing_topic, qos_publisher) 
+        self.publisher=self.create_publisher(publisher_msg, publishing_topic, qos_profile=qos_publisher)
 
-        publishing_period=1/rate
+
+        self.create_subscription(PoseStamped, "/goal_pose", self.designPathFor, 10)
         
-        # Instantiate the controller
-        # TODO Part 5: Tune your parameters here
-    
-        if motion_type == POINT_PLANNER:
-            self.controller=controller(klp= 0.5, klv= 0.5, kli= 0.8, kap= 3, kav=0.6, kai=0.8)
-            self.planner=planner(POINT_PLANNER)    
-    
-    
+        self.pathPublisher = self.create_publisher(Path, '/designedPath', 10)
+        publishing_period=1/rate
+
+        self.reachThreshold=0.1
+
+        # TODO part 5: call the proper types
+        self.localizer=localization(...)
+        
+        if motion_type==POINT_PLANNER:
+            self.controller=controller(klp=0.05, klv=0.0, kap=0.8, kav=0.0)      
+            self.planner=planner(POINT_PLANNER)
+
+        
         elif motion_type==TRAJECTORY_PLANNER:
-            self.controller=trajectoryController(klp=1, klv=1, kli=1, kap=0.8, kav=1, kai=1)
+            self.controller=trajectoryController(klp=0.2, klv=0.5, kap=0.8, kav=0.6)      
             self.planner=planner(TRAJECTORY_PLANNER)
-
+        
         else:
-            print("Error! you don't have this planner", file=sys.stderr)
+            print("Error! you don't have this type of planner", file=sys.stderr)
 
 
-        # Instantiate the localization, use rawSensor for now  
-        self.localizer=localization(rawSensor)
-
-        # Instantiate the planner
-        # NOTE: goalPoint is used only for the pointPlanner
-        self.goal=self.planner.plan(goalPoint)
+        self.goal = None
 
         self.create_timer(publishing_period, self.timerCallback)
 
 
-    def timerCallback(self):
-        
-        # CHECK Part 3: Run the localization node
-            # Remember that this file is already running the decision_maker node.
-        spin_once(self.localizer,timeout_sec=0.01) #Non-blocking
+        print("waiting for your input position, use 2D nav goal in rviz2")
 
-        if self.localizer.getPose()  is  None:
+
+
+
+    
+    def designPathFor(self, msg: PoseStamped):
+        while self.localizer.pose is None:
+            spin_once(self.localizer)
+            self.get_logger().info("waiting for the first pose")
+            time.sleep(0.1)
+        
+        if self.localizer.getPose() is  None:
             print("waiting for odom msgs ....")
             return
+        
+        
+        self.goal=self.planner.plan([self.localizer.getPose()[0], self.localizer.getPose()[1]],
+                                     [msg.pose.position.x, msg.pose.position.y])
 
+    
+    def timerCallback(self):
+        
+        if self.goal is None:
+            return
+
+        spin_once(self.localizer)
+
+        if self.localizer.getPose() is  None:
+            print("waiting for odom msgs ....")
+            return
+        
+        
         vel_msg=Twist()
         
-        # CHECK Part 3: Check if you reached the goal
-        if type(self.goal) == list:
-            reached_goal= True
+        if type(self.goal) is list:
+            reached_goal=True if calculate_linear_error(self.localizer.getPose(), self.goal[-1]) <self.reachThreshold else False
         else: 
-            reached_goal= False
+            reached_goal=True if calculate_linear_error(self.localizer.getPose(), self.goal) <self.reachThreshold else False
 
-        #Once making it to the "goal" determine tolerances and errors for how well we made it 
-        LIN_TOT = 0.05
-        ANG_TOT = 0.05
 
-        current_pose = self.localizer.getPose() #Retrieves [x,y,theta]
-        if isinstance(self.goal, list):
-            lin_err = calculate_linear_error(current_pose,self.goal)
-            ang_err = calculate_angular_error(current_pose, self.goal)
-            reached_goal = (lin_err <= LIN_TOT) and (abs(ang_err) <= ANG_TOT)
 
-        else: 
-            reached_goal = getattr(self.planner, "is_finished", lambda pose: False)(current_pose)
-        #Some params to make sure we actually reached the goal
-
-        
 
         if reached_goal:
             print("reached goal")
-
-            #STOP the robot
-            vel_msg.linear.x = 0.0
-            vel_msg.angular.z = 0.0
-
             self.publisher.publish(vel_msg)
             
             self.controller.PID_angular.logger.save_log()
             self.controller.PID_linear.logger.save_log()
             
-            #CHECK Part 3: exit the spin
-            raise SystemExit 
+            self.goal = None
+            print("waiting for the new position input, use 2D nav goal on map")
+
+            return
         
+        velocity, yaw_rate = self.controller.\
+            vel_request(self.localizer.getPose(), self.goal, True)
 
-        #CHECK Part 4: Publish the velocity to move the robot
-        velocity, yaw_rate = self.controller.vel_request(self.localizer.getPose(), self.goal, True)
-
-        #Publish the vel to move the robot
-        # print(velocity)
-        vel_msg.linear.x = float(velocity)
-        vel_msg.angular.z = float(yaw_rate)
+        
+        vel_msg.linear.x=velocity
+        vel_msg.angular.z=yaw_rate
+        
         self.publisher.publish(vel_msg)
 
+
+
 import argparse
-
-
 def main(args=None):
     
+    
     init()
-
-    # CHECK Part 3: You migh need to change the QoS profile based on whether you're using the real robot or in simulation.
-    # Remember to define your QoS profile based on the information available in "ros2 topic info /odom --verbose" as explained in Tutorial 3
     
-    use_Sim = True # CONFIGURE
-
-    if use_Sim:
-        odom_qos = QoSProfile(
-            reliability = QoSReliabilityPolicy.BEST_EFFORT,
-            durability = QoSDurabilityPolicy.VOLATILE,
-            history = 1,
-            depth = 5 #Less wacky data so no need for it to be large
-        )
-    else: 
-        odom_qos = QoSProfile(
-            reliability = QoSReliabilityPolicy.BEST_EFFORT,
-            durability = QoSDurabilityPolicy.VOLATILE,
-            history = 1,
-            depth = 10
-        )
-        # cmd_vel QoS should match subscribers (use RELIABLE if subscribers request RELIABILITY)
-    cmd_vel_qos = QoSProfile(
-        reliability = QoSReliabilityPolicy.RELIABLE,
-        durability = QoSDurabilityPolicy.VOLATILE,
-        history = 1,
-        depth = 10
-    )
-
-    # CHECK Part 4: instantiate the decision_maker with the proper parameters for moving the robot
-    if args.motion.lower() == "point":
-        goal_point = [-1.0, -5.0]  # example point goal (x, y) — change as required
-        DM = decision_maker(Twist, "/cmd_vel", cmd_vel_qos, goal_point, rate=10, motion_type=POINT_PLANNER)
-    elif args.motion.lower() == "trajectory":
-        # pass a trajectory descriptor or None depending on your planner implementation
-        DM = decision_maker(Twist, "/cmd_vel", cmd_vel_qos, None, rate=10, motion_type=TRAJECTORY_PLANNER)
+    odom_qos=QoSProfile(reliability=2, durability=2, history=1, depth=10)
+    
+    if args.motion == "point":
+        DM=decision_maker(Twist, "/cmd_vel", 10, motion_type=POINT_PLANNER)
+    elif args.motion == "trajectory":
+        DM=decision_maker(Twist, "/cmd_vel", 10, motion_type=TRAJECTORY_PLANNER)
     else:
-        print("invalid motion type", file=sys.stderr)       
-    
-    
-    
+        print("invalid motion type", file=sys.stderr)
+
+
+
     try:
         spin(DM)
     except SystemExit:
         print(f"reached there successfully {DM.localizer.pose}")
 
 
-if __name__=="__main__":
 
+
+if __name__=="__main__":
     argParser=argparse.ArgumentParser(description="point or trajectory") 
     argParser.add_argument("--motion", type=str, default="point")
     args = argParser.parse_args()

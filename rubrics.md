@@ -1,41 +1,44 @@
-## Pre-lab
-- ```-5``` marks if the code is not submitted by 24 hours before the lab section.
-- ```-3``` marks if code submitted but mostly incomplete or completions are random/do not make sense.
-## General 
-**From Code Submission on LEARN:**
-- ```-1``` for each portion of code to be completed and not commented.
 ## Part 1 and 2: No marks
-## Part 3: 15 marks
-**From Code Submission on LEARN:**
-- ```6``` marks for correct completion of ```localization.py```: ```4/6``` for incorrect lines and ```1/6``` for non-sense  completion.
-- ```6``` marks for correct completion of ```decision.py```: ```4/6``` for incorrect lines and ```1/6``` for non-sense  completion.
-- ```3``` marks for correct completion of ```utilities.py```: ```2/3``` for incorrect lines and ```1/3``` for non-sense completion.
-> 6 x 2 + 3 = 15 marks
-## Part 4: 20 marks
-**From Code Submission on LEARN:** 
-- ```3``` marks for correct completion of ```pid.py```, ```utilities.py```, ```controller.py```, and, ```decision.py```.
-> 3 x 4 = 12 marks
 
-**In-Lab:** ```8``` marks for testing Point Controller
+## Part 3: 10 marks
+**In-Lab:**
+- ```10``` marks for successful map acquisition and saving as `room` map.
 
-- If you did not show the motions in the lab to a TA, then you get ```4``` marks (50% off) if you have the plots in the report.
+## Part 4: 40 marks
+**Codes: 20 marks**
+- ```5``` marks for finishing the motion model in `particle.py -> motion_model`.
+- ```5``` marks for finishing the random particle generation for initialization in `particleFilter.py -> initializeParticleFilter`.
+- ```5``` marks for finishing the random particle sampling in `particleFilter.py -> resample`.
+- ```5``` marks for finishing the particle filter adding noise to the sampled particles in `particleFilter.py -> resample`.
+
+**In-Lab: 20 marks**
+- ```5``` marks for explaining the likelihood computation in `mapUtilities.py -> make_likelihood_field` to a TA.
+- ```5``` marks for explaining how to compute the weight for each particle in `particle.py -> calculateParticleWeight` to a TA.
+- ```10``` marks for demonstrating the particle filter pose estimation in Rviz while moving the robot via keyboard.
 
 ## Part 5: 20 marks
-**From Report on LEARN:**
-- ```2``` marks for plots with title, label name for axis, legends, different shapes/colors for each data, and grids.
-- ```8``` marks for plots for P and PID: {e-t, edot-t}, and {x-t, y-t, th-t}, and {x-y}, {e-edot}.
-- ```10``` marks for showing the tunning process.
+**Codes: 10 marks**
+- ```10``` marks for correctly logging the pose in `localization.py -> odom_and_pf_pose_callback`.
 
-## Part 6: 20 marks
-**In-Lab: 20 marks**
-- ```10``` marks for each trajectory: ```0``` for inexecutable code, ```5``` for incorrect motion, and ```8``` for jerky trajectories.
-- If you did not show the motions in the lab to a TA, then you get ```5``` marks (50% off) for each trajectory shown in the plots in the report.
+**In-Lab: 10 marks**
+- ```10``` marks for integrating the particle filter with the navigation stack and demonstrating particle filter-based localization in Rviz while the robot moves to a goal using the point controller.
 
-> 10 x 2 = 20 marks
-  
 ## Conclusions: 25 marks
 **From Report on LEARN:**
 - ```1``` mark for names (Family Name, First Name); student IDs; station number; and robot number of all group members.
-- ```6``` marks for plots of Part 6 {x-y} for parabola and sigmoid (2 plots), of which ```2``` marks for title, label name for axis, legends, different shapes/colors for each data, and grids.
-- ```8``` marks for stability analysis of each controller (overshoot, oscillations, response time, etc.).
-- ```10``` marks for discussion (comparison between controllers in the light of parameters calculated in stability analysis).
+- ```10``` marks for plots with title, label names for axes, legends, different shapes/colors for each data, and grids.
+- ```7``` marks for discussion comparing the particle filter and raw sensor method in the light of the plotted data.
+- ```7``` marks for discussion on the performance comparison by changing the laser scan deviation.
+
+## Pre-lab Deliverable: 5 marks
+- ```5``` marks for submitting a first version of the completed code at least 24 hours before the group's lab section.
+- Failure to submit results in a ```5``` mark penalty on the final lab report.
+- The code does not have to be fully correct but should be nearly complete and meaningful with appropriate comments.
+
+## Submission Requirements
+- **Report**: Submit one single PDF file containing all required sections and plots.
+- **Code**: Submit a single zip file containing all source files, including CSV files obtained from data logging.
+- Only one submission per group is needed.
+
+Good luck!
+
