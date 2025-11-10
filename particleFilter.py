@@ -23,6 +23,7 @@ from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Point, PoseWithCovarianceStamped
 from std_msgs.msg import ColorRGBA
 from nav_msgs.msg import OccupancyGrid
+from geometry_msgs.msg import TransformStamped
 
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
@@ -62,7 +63,7 @@ class particleFilter(Node):
 
         # Create the map utilities object
         # TODO: You can tune your laser_sig here
-        self.mapUtilities = mapManipulator(mapFilename, laser_sig=0.1)
+        self.mapUtilities = mapManipulator(mapFilename, laser_sig=0.4)
         self.mapUtilities.make_likelihood_field()
         self.occ_map = self.mapUtilities.to_message()
         # create a Timer to publish the map every 1 second
@@ -287,6 +288,25 @@ class particleFilter(Node):
         msg.pose.pose.orientation = quaternion_from_euler(self.championPose[2])
 
         self.pfPosePublisher.publish(msg)
+
+        # Additionally publish a conventional transform from 'map' -> ego_odom_frame_id
+        # so tools like RViz can connect the TF tree in the usual direction.
+        try:
+            if self.ego_odom_frame_id is not None:
+                t = TransformStamped()
+                t.header.frame_id = "map"
+                t.child_frame_id = self.ego_odom_frame_id
+                t.header.stamp = msg.header.stamp
+                t.transform.translation.x = self.championPose[0]
+                t.transform.translation.y = self.championPose[1]
+                t.transform.translation.z = 0.0
+                t.transform.rotation = quaternion_from_euler(self.championPose[2])
+
+                # send the transform
+                self.br.sendTransform(t)
+        except Exception:
+            # don't let TF publishing break the filter; fail silently
+            pass
 
     def publishOdomPose(self, odomMsg):
         odomMsg.header.frame_id = "map"
