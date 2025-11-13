@@ -31,7 +31,7 @@ from rclpy.time import Time
 
 class particleFilter(Node):
 
-    def __init__(self, mapFilename="your_map/room.yaml", numParticles=500):
+    def __init__(self, mapFilename="room.yaml", numParticles=500):
 
         super().__init__("particleFiltering")
 
