@@ -31,7 +31,7 @@ from rclpy.time import Time
 
 class particleFilter(Node):
 
-    def __init__(self, mapFilename="room.yaml", numParticles=500):
+    def __init__(self, mapFilename="sim.yaml", numParticles=500):
 
         super().__init__("particleFiltering")
 
@@ -63,7 +63,8 @@ class particleFilter(Node):
 
         # Create the map utilities object
         # TODO: You can tune your laser_sig here
-        self.mapUtilities = mapManipulator(mapFilename, laser_sig=0.4)
+        self.mapUtilities = mapManipulator(mapFilename, laser_sig=0.05
+                                           )
         self.mapUtilities.make_likelihood_field()
         self.occ_map = self.mapUtilities.to_message()
         # create a Timer to publish the map every 1 second
