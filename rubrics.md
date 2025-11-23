@@ -1,44 +1,32 @@
-## Part 1 and 2: No marks
+# Rubric for Lab 4: In-lab Evaluation
+As suggested by Professor Jeon, there is **no report required for Lab 4**. 
+However, to ensure a comprehensive evaluation of your understanding and implementation of the A star planning and all the labs, we have designed the following rubric for grading your lab work.
 
-## Part 3: 10 marks
-**In-Lab:**
+## Pre-lab Submission: 10 marks
+- ```10``` marks for submitting a first version of the completed code before the group's lab section.
+
+## Part 3: Map Acquisition and Saving: 10 marks
 - ```10``` marks for successful map acquisition and saving as `room` map.
 
-## Part 4: 40 marks
-**Codes: 20 marks**
-- ```5``` marks for finishing the motion model in `particle.py -> motion_model`.
-- ```5``` marks for finishing the random particle generation for initialization in `particleFilter.py -> initializeParticleFilter`.
-- ```5``` marks for finishing the random particle sampling in `particleFilter.py -> resample`.
-- ```5``` marks for finishing the particle filter adding noise to the sampled particles in `particleFilter.py -> resample`.
+## Part 4 & 5: Understanding of A Star Planning and the Whole Autonomous Mobile Robot System: 40 marks
+- ```20``` marks for explaining the A star planning algorithm to a TA.
+    - Explain the following components:
+        - Two Heuristic functions (h Manhattan and Euclidean).
+        - Cost functions (g, h, f).
+        - How to select the next node to expand.
+    - Why A star is more efficient than Dijkstra's algorithm.
+- ```20``` marks for explaining the integration of all components in the autonomous mobile robot system to a TA.
+    - What components you have implemented in this lab series (L1 to L4).
+    - The role of each component in the overall system.
+    - How these components work together to enable autonomous navigation.
 
-**In-Lab: 20 marks**
-- ```5``` marks for explaining the likelihood computation in `mapUtilities.py -> make_likelihood_field` to a TA.
-- ```5``` marks for explaining how to compute the weight for each particle in `particle.py -> calculateParticleWeight` to a TA.
-- ```10``` marks for demonstrating the particle filter pose estimation in Rviz while moving the robot via keyboard.
 
-## Part 5: 20 marks
-**Codes: 10 marks**
-- ```10``` marks for correctly logging the pose in `localization.py -> odom_and_pf_pose_callback`.
-
-**In-Lab: 10 marks**
-- ```10``` marks for integrating the particle filter with the navigation stack and demonstrating particle filter-based localization in Rviz while the robot moves to a goal using the point controller.
-
-## Conclusions: 25 marks
-**From Report on LEARN:**
-- ```1``` mark for names (Family Name, First Name); student IDs; station number; and robot number of all group members.
-- ```10``` marks for plots with title, label names for axes, legends, different shapes/colors for each data, and grids.
-- ```7``` marks for discussion comparing the particle filter and raw sensor method in the light of the plotted data.
-- ```7``` marks for discussion on the performance comparison by changing the laser scan deviation.
-
-## Pre-lab Deliverable: 5 marks
-- ```5``` marks for submitting a first version of the completed code at least 24 hours before the group's lab section.
-- Failure to submit results in a ```5``` mark penalty on the final lab report.
-- The code does not have to be fully correct but should be nearly complete and meaningful with appropriate comments.
-
-## Submission Requirements
-- **Report**: Submit one single PDF file containing all required sections and plots.
-- **Code**: Submit a single zip file containing all source files, including CSV files obtained from data logging.
-- Only one submission per group is needed.
+## Part 6: Robot Navigation using A Star Planning: 40 marks
+- ```10``` marks for successful implementation of A star planning for robot navigation (showing planned path on RViz).
+- ```30``` marks for the robot successfully navigating from start to goal positions without collisions (3 experiments will be conducted).
+    - Two goal positions using one heuristic function.
+    - One goal position using the other heuristic function.
+# Total: 100 marks
 
 Good luck!
 

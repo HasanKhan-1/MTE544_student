@@ -23,7 +23,6 @@ from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Point, PoseWithCovarianceStamped
 from std_msgs.msg import ColorRGBA
 from nav_msgs.msg import OccupancyGrid
-from geometry_msgs.msg import TransformStamped
 
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
@@ -31,7 +30,7 @@ from rclpy.time import Time
 
 class particleFilter(Node):
 
-    def __init__(self, mapFilename="sim.yaml", numParticles=500):
+    def __init__(self, mapFilename="your_map/room.yaml", numParticles=500):
 
         super().__init__("particleFiltering")
 
@@ -63,8 +62,7 @@ class particleFilter(Node):
 
         # Create the map utilities object
         # TODO: You can tune your laser_sig here
-        self.mapUtilities = mapManipulator(mapFilename, laser_sig=0.05
-                                           )
+        self.mapUtilities = mapManipulator(mapFilename, laser_sig=0.1)
         self.mapUtilities.make_likelihood_field()
         self.occ_map = self.mapUtilities.to_message()
         # create a Timer to publish the map every 1 second
@@ -101,12 +99,10 @@ class particleFilter(Node):
 
         numParticles = self.numParticles
 
-        # TODO: generate the particles around the initial pose (x, y, th) (you should use the std_particle_x, std_particle_y, std_particle_theta)
-        self.particlePoses = np.array([[np.random.normal(x, self.std_particle_x), 
-                                        np.random.normal(y, self.std_particle_y), 
-                                        np.random.normal(th, self.std_particle_theta)] 
-                                        for _ in range(numParticles)])
-        
+        # generate the particles around the initial pose (x, y, th) (you should use the std_particle_x, std_particle_y, std_particle_theta)
+        self.particlePoses = np.random.uniform(low=[x-self.std_particle_x, y - self.std_particle_y,  th - 1.0],
+                                               high=[x+self.std_particle_x, y + self.std_particle_y, th + 1.0], size=(numParticles, 3))
+
         self.particles = [particle(particle_, 1/numParticles) for particle_ in
                           self.particlePoses]
 
@@ -177,15 +173,16 @@ class particleFilter(Node):
         # print("Sum of weights: ", np.sum(particles_weights))
         particles_weights = particles_weights / np.sum(particles_weights)
         
-        # TODO: randomly sampling N particles from the list of particles based on their weights (hint: use np.random.choice)
-        sampled_particles = np.random.choice(self.particles, size=len(self.particles), p=particles_weights)
+        # randoming sampling N particles from the list of particles based on their weights
+        sampled_particles = np.random.choice(
+            self.particles, self.numParticles, p=particles_weights)
 
         for bp in sampled_particles:
             x, y, th = bp.getPose()
-            # TODO: add noise to the x, y, and th, use the same std_noise for x, y, and th
-            new_x = x + np.random.normal(0, std_noise)
-            new_y = y + np.random.normal(0, std_noise)
-            new_th = th + np.random.normal(0, std_noise)
+            # add noise to the x, y, and th, use the same std_noise for x, y, and th
+            new_x = x + random.uniform(-std_noise, std_noise)
+            new_y = y + random.uniform(-std_noise, std_noise)
+            new_th = th + random.uniform(-std_noise, std_noise)
 
             new_particle = particle([new_x, new_y, new_th], bp.getWeight())
 
@@ -289,25 +286,6 @@ class particleFilter(Node):
         msg.pose.pose.orientation = quaternion_from_euler(self.championPose[2])
 
         self.pfPosePublisher.publish(msg)
-
-        # Additionally publish a conventional transform from 'map' -> ego_odom_frame_id
-        # so tools like RViz can connect the TF tree in the usual direction.
-        try:
-            if self.ego_odom_frame_id is not None:
-                t = TransformStamped()
-                t.header.frame_id = "map"
-                t.child_frame_id = self.ego_odom_frame_id
-                t.header.stamp = msg.header.stamp
-                t.transform.translation.x = self.championPose[0]
-                t.transform.translation.y = self.championPose[1]
-                t.transform.translation.z = 0.0
-                t.transform.rotation = quaternion_from_euler(self.championPose[2])
-
-                # send the transform
-                self.br.sendTransform(t)
-        except Exception:
-            # don't let TF publishing break the filter; fail silently
-            pass
 
     def publishOdomPose(self, odomMsg):
         odomMsg.header.frame_id = "map"

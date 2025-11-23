@@ -16,7 +16,7 @@ from utilities import *
 class mapManipulator(Node):
 
 
-    def __init__(self, filename_: str = "sim.yaml", laser_sig=0.2):
+    def __init__(self, filename_: str = "room.yaml", laser_sig=0.1):
         
         
         super().__init__('likelihood_field')
@@ -153,7 +153,7 @@ class mapManipulator(Node):
         origin = self.getOrigin()
         res = self.getResolution()
         h = self.height
-        return pix_array * res + origin + np.array([0, -h*res])
+        return (pix_array * np.array([1, -1]) + np.array([0, h])) * res + origin
     
     
     def position_2_cell(self, pos_array):
@@ -165,9 +165,9 @@ class mapManipulator(Node):
         origin = self.getOrigin()
         res = self.getResolution()
         h = self.height
-        return (np.array(np.floor((-origin + pos_array)/res), dtype=np.int32)) - np.array([0, h])
+        return (np.array(np.floor((-origin + pos_array)/res) * np.array([1, -1]) + np.array([0, h]), dtype=np.int32))
 
-    # TODO part 4: See through this method and explain how it works to the TA
+
     def make_likelihood_field(self):
         
         image_array=self.image_array
@@ -243,7 +243,7 @@ if __name__=="__main__":
     rclpy.init()
 
     parser=argparse.ArgumentParser()
-    parser.add_argument('--map', type=str, default="sim.yaml", help='the absolute path to argument')
+    parser.add_argument('--map', type=str, default="./your_map/room.yaml", help='the absolute path to argument')
     parser.add_argument('--std', type=float, help='the std', default=0.01)
 
 
