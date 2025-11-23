@@ -70,17 +70,28 @@ def search(maze, start, end):
         print("Start or end is on a wall, or outside the boundaries of the maze")
         return None
     
+    def manhattan_distance(pos1,pos2):
+        return abs(pos1[0] + pos2[1]) + abs(pos1[0] + pos2[0])
+    
+    def euclidean_distance(pos1,pos2):
+        return sqrt((pos1[0] + pos2[1])**2) + sqrt((pos1[0]+pos2[1])**2)
+    
+    #COMMENT BASED ON WHAT DISTANCE CALC WE WANNA USE!
+    # HEURISTIC_FUNC = manhattan_distance
+    HEURISTIC_FUNC = euclidean_distance
+
+    
     # TODO PART 4 Create start and end node with initized values for g, h and f
     # Use None as parent if not defined
-    start_node = Node(...)
-    start_node.g = ...     # cost from start Node
-    start_node.h = ...     # heuristic estimated cost to end Node
-    start_node.f = ...
+    start_node = Node(None,start)
+    start_node.g = 0       # cost from start Node
+    start_node.h = HEURISTIC_FUNC(start_node.position, end)     # heuristic estimated cost to end Node
+    start_node.f = start_node.g + start_node.h
 
-    end_node = Node(...)
-    end_node.g = ...       # set a large value if not defined
-    end_node.h = ...       # heuristic estimated cost to end Node
-    end_node.f = ...
+    end_node = Node(Node, end)
+    end_node.g = float('inf')       # set a large value if not defined
+    end_node.h = 0              # heuristic estimated cost to end Node
+    end_node.f = float('inf')
 
     # Initialize both yet_to_visit and visited dictionary
     # in this dict we will put all node that are yet_to_visit for exploration.
@@ -140,8 +151,8 @@ def search(maze, start, end):
         current_fscore = None
         for position, node in yet_to_visit_dict.items():
             if current_fscore is None or node.f < current_fscore:
-                current_fscore = ...
-                current_node = ...
+                current_fscore = node.f
+                current_node = node
 
         # if we hit this point return the path such as it may be no solution or
         # computation cost is too high
@@ -167,7 +178,8 @@ def search(maze, start, end):
             node_position = (current_node.position[0] + new_position[0], current_node.position[1] + new_position[1])
 
             # TODO PART 4 Make sure within range (check if within maze boundary)
-            if (...):
+            if (node_position[0] < 0 or node_position[0] >= no_rows or 
+                node_position[1] < 0 or node_position[1] >= no_columns):
                 continue
 
             # Make sure walkable terrain
@@ -184,22 +196,38 @@ def search(maze, start, end):
 
         for child in children:
 
-            # TODO PART 4 Child is on the visited dict (use get method to check if child is in visited dict, if not found then default value is False)
-            if ():
+            # TODO PART 4 Child is on the visited dict
+            if visited_dict.get(child.position, False):
                 continue
+
+            # Determine the cost of movement. For 4-way, it's 1.
+            # For 8-way: 1 for cardinal (non-diagonal), sqrt(2) for diagonal.
+            # Check if the move was diagonal (new_position[0] and new_position[1] are both non-zero)
+            is_diagonal = new_position[0] != 0 and new_position[1] != 0
+            step_cost = sqrt(2) if is_diagonal else 1
 
             # TODO PART 4 Create the f, g, and h values
-            child.g = ...
-            # Heuristic costs calculated here, this is using eucledian distance
-            child.h = ...
-
+            child.g = current_node.g + step_cost
+            
+            # Heuristic costs calculated here
+            child.h = HEURISTIC_FUNC(child.position, end)
+            
             child.f = child.g + child.h
 
-            # Child is already in the yet_to_visit list and g cost is already lower
+            # Child is already in the yet_to_visit list
             child_node_in_yet_to_visit = yet_to_visit_dict.get(
-                child.position, False)
-            if (child_node_in_yet_to_visit is not False) and (child.g >= child_node_in_yet_to_visit.g):
+                child.position, None)
+            
+            # If the child node is in yet_to_visit AND the new g cost is NOT better, then ignore it.
+            if (child_node_in_yet_to_visit is not None) and (child.g >= child_node_in_yet_to_visit.g):
                 continue
-
-            # Add the child to the yet_to_visit list
-            yet_to_visit_dict[child.position] = child
+            
+            # If a better path is found, or it's a new node, update/add it.
+            if child_node_in_yet_to_visit is not None:
+                # Update the existing node in yet_to_visit with the new better values (parent, g, f)
+                child_node_in_yet_to_visit.g = child.g
+                child_node_in_yet_to_visit.f = child.f
+                child_node_in_yet_to_visit.parent = current_node
+            else:
+                # Add the child to the yet_to_visit list
+                yet_to_visit_dict[child.position] = child
