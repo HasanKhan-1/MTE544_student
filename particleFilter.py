@@ -59,6 +59,7 @@ class particleFilter(Node):
         self.mapPublisher = self.create_publisher(OccupancyGrid, "/customMap", 10)
         self.pfPosePublisher = self.create_publisher(Odometry, '/pf_pose', 10)
         self.odomPosePublisher = self.create_publisher(Odometry, '/odom_pose', 10)
+        self.robotMarkerPublisher = self.create_publisher(Marker, "/robot_marker", 10)
 
         # Create the map utilities object
         # TODO: You can tune your laser_sig here
@@ -286,6 +287,37 @@ class particleFilter(Node):
         msg.pose.pose.orientation = quaternion_from_euler(self.championPose[2])
 
         self.pfPosePublisher.publish(msg)
+        # Also publish a robot marker so Rviz displays the robot visually
+        self.publishRobotMarker(msg.header.stamp)
+
+    def publishRobotMarker(self, stamp):
+        """Publish a cylinder marker representing the robot at the champion pose."""
+        if self.championPose is None:
+            return
+        
+        marker = Marker()
+        marker.header.frame_id = "map"
+        marker.header.stamp = stamp
+        marker.id = 0
+        marker.ns = "robot"
+        marker.type = Marker.CYLINDER  # Use a cylinder to represent the robot
+        marker.action = Marker.ADD
+        
+        # Position
+        marker.pose.position.x = self.championPose[0]
+        marker.pose.position.y = self.championPose[1]
+        marker.pose.position.z = 0.1  # Height above ground
+        marker.pose.orientation = quaternion_from_euler(self.championPose[2])
+        
+        # Size (diameter=0.3m, height=0.2m)
+        marker.scale.x = 0.3
+        marker.scale.y = 0.3
+        marker.scale.z = 0.2
+        
+        # Color (red with transparency)
+        marker.color = ColorRGBA(r=1.0, g=0.0, b=0.0, a=0.8)
+        
+        self.robotMarkerPublisher.publish(marker)
 
     def publishOdomPose(self, odomMsg):
         odomMsg.header.frame_id = "map"

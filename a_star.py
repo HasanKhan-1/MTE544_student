@@ -70,11 +70,13 @@ def search(maze, start, end):
         print("Start or end is on a wall, or outside the boundaries of the maze")
         return None
     
-    def manhattan_distance(pos1,pos2):
-        return abs(pos1[0] + pos2[1]) + abs(pos1[0] + pos2[0])
+    def manhattan_distance(pos1, pos2):
+        # Manhattan distance: |x1 - x2| + |y1 - y2|
+        return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
     
-    def euclidean_distance(pos1,pos2):
-        return sqrt((pos1[0] + pos2[1])**2) + sqrt((pos1[0]+pos2[1])**2)
+    def euclidean_distance(pos1, pos2):
+        # Euclidean distance: sqrt((x1-x2)^2 + (y1-y2)^2)
+        return sqrt((pos1[0] - pos2[0])**2 + (pos1[1] - pos2[1])**2)
     
     #COMMENT BASED ON WHAT DISTANCE CALC WE WANNA USE!
     # HEURISTIC_FUNC = manhattan_distance
